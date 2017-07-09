@@ -1,12 +1,18 @@
 var date = new Date();
 var fs = require('fs');
+var request = require('request');
+
+function done(output) {
+  process.stdout.write(output);
+  //process.stdout.write('\nprompt > ');
+}
 
 function commandFunc(command) {
   if (command === 'pwd') {
-    process.stdout.write('You typed: ' + process.cwd());
+    done('You typed: ' + process.cwd());
   }
   if (command === 'date') {
-    process.stdout.write('You typed: ' + date);
+    done('You typed: ' + date);
 
   }
 
@@ -14,7 +20,7 @@ function commandFunc(command) {
     fs.readdir('.', function(err, files){
       if (err) throw err;
       files.forEach(function(file){
-        process.stdout.write(file.toString() + "\n" )
+        done(file.toString() + "\n" )
       });
     });
   }
@@ -25,7 +31,7 @@ function echoFunc(command) {
   var commands = command.split(' ');
   if (commands[0] === 'echo') {
     commands.slice(1).forEach(function(value){
-      process.stdout.write(value + ' ');
+      done(value + ' ');
     });
   }
 }
@@ -35,7 +41,7 @@ function filesFunc(command) {
   if (commands[0] === 'cat') {
     fs.readFile('./' + commands[1], function(err, data){
       if (err) throw err;
-      process.stdout.write(data);
+      done(data);
     });
   }
 
@@ -45,7 +51,7 @@ function filesFunc(command) {
 
       var headLines = data.toString().split("\n").slice(0, 5);
       headLines.forEach(function(line){
-        process.stdout.write(line + "\n");
+        done(line + "\n");
       });
 
     });
@@ -57,7 +63,7 @@ function filesFunc(command) {
 
       var tailLines = data.toString().split("\n").slice(-6, -1);
       tailLines.forEach(function(line){
-        process.stdout.write(line + "\n");
+        done(line + "\n");
       });
 
     });
@@ -69,7 +75,7 @@ function filesFunc(command) {
 
       var lines = data.toString().split("\n").sort();
       lines.forEach(function(line){
-        process.stdout.write(line + '\n');
+        done(line + '\n');
       });
       });
 
@@ -79,12 +85,58 @@ function filesFunc(command) {
       if (err) throw err;
 
       var lines = data.toString().split("\n");
-      process.stdout.write(lines.length.toString());
+      done(lines.length.toString());
       });
     }
 
+   if (commands[0] === 'uniq') {
+    fs.readFile('./' + commands[1], function(err, data){
+      if (err) throw err;
+
+      var lines = data.toString().split("\n");
+      var result = [];
+
+      lines.forEach(function(line){
+        if (!result.includes(line)) {
+          result.push(line);
+          }
+        });
+
+      result.forEach(function(ele){
+        done(ele + '\n');
+      });
+
+      });
+    }
+
+    if (commands[0] === 'curl') {
+      request(commands[1], function(err, res, body){
+        if (err) throw err;
+        done(body);
+      });
+    }
+
+    if (commands[0] === 'find') {
+      fs.readdir(commands[1], function(err, files){
+      if (err) throw err;
+
+
+      files.forEach(function(file){
+          done(file.toString() + "\n")
+      });
+
+      for (var i = 0; i < files.length; i++) {
+        if (files[i].indexOf('.') === -1) {
+          filesFunc('find ' + commands[1] + '/' + files[i]);
+        }
+      }
+
+
+    });
+    }
 
 }
+
 
 
 module.exports = {
