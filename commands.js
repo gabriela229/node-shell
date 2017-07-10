@@ -10,6 +10,7 @@ function done(output) {
 function commandFunc(command) {
   if (command === 'pwd') {
     done('You typed: ' + process.cwd());
+
   }
   if (command === 'date') {
     done('You typed: ' + date);
@@ -20,9 +21,12 @@ function commandFunc(command) {
     fs.readdir('.', function(err, files){
       if (err) throw err;
       files.forEach(function(file){
-        done(file.toString() + "\n" )
+        done('' + file.toString() + '\n');
+        // questions: with '' in the front, the output start from the second line
+        // without it, there will be a new 'prompt >'
       });
     });
+
   }
 
 }
@@ -41,7 +45,7 @@ function filesFunc(command) {
   if (commands[0] === 'cat') {
     fs.readFile('./' + commands[1], function(err, data){
       if (err) throw err;
-      done(data);
+      done('\n' + data);
     });
   }
 
@@ -122,11 +126,11 @@ function filesFunc(command) {
 
 
       files.forEach(function(file){
-          done(file.toString() + "\n")
+          done(commands[1] + '/' + file.toString() + "\n")
       });
 
       for (var i = 0; i < files.length; i++) {
-        if (files[i].indexOf('.') === -1) {
+        if (fs.lstatSync(commands[1] + '/' + files[i]).isDirectory()) {
           filesFunc('find ' + commands[1] + '/' + files[i]);
         }
       }
