@@ -2,22 +2,24 @@ var date = new Date();
 var fs = require('fs');
 var request = require('request');
 
+
 function done(output) {
   process.stdout.write(output);
-  //process.stdout.write('\nprompt > ');
 }
 
-function commandFunc(command) {
-  if (command === 'pwd') {
+function commandFunc(command, stdinStr) {
+
+  var allCommands = command.split(/\s*\|\s*/g);
+  var commands = allCommands[0].split(' ');
+
+  if (commands[0] === 'pwd') {
     done('You typed: ' + process.cwd());
-
   }
-  if (command === 'date') {
+  if (commands[0] === 'date') {
     done('You typed: ' + date);
-
   }
 
-  if (command === 'ls') {
+  if (commands[0] === 'ls') {
     fs.readdir('.', function(err, files){
       if (err) throw err;
       files.forEach(function(file){
@@ -29,36 +31,65 @@ function commandFunc(command) {
 
   }
 
-}
-
-function echoFunc(command) {
-  var commands = command.split(' ');
   if (commands[0] === 'echo') {
     commands.slice(1).forEach(function(value){
       done(value + ' ');
     });
   }
-}
 
-function filesFunc(command) {
-  var commands = command.split(' ');
   if (commands[0] === 'cat') {
+    var tempOutput = '';
+
     fs.readFile('./' + commands[1], function(err, data){
       if (err) throw err;
-      done('\n' + data);
+      tempOutput += '\n' + data;
+
+      allCommands.shift();
+      if (allCommands.length > 0) {
+        commandFunc(allCommands[0], tempOutput);
+      }
+      else {
+        done(tempOutput);
+      }
+
+
     });
   }
 
   if (commands[0] === 'head') {
-    fs.readFile('./' + commands[1], function(err, data){
-      if (err) throw err;
+    if (!stdinStr) {
+      var tempOutput = '';
+      fs.readFile('./' + commands[1], function(err, data){
+        if (err) throw err;
 
-      var headLines = data.toString().split("\n").slice(0, 5);
-      headLines.forEach(function(line){
-        done(line + "\n");
+        var headLines = data.toString().split("\n").slice(0, 5);
+        headLines.forEach(function(line){
+          tempOutput += line + '\n';
+        });
+
+        // check following commands, if there is no commmand, done
+
       });
+    }
+    else {
+      var tempOutput = '';
+      // read stdin
+      var headLines = stdinStr.split("\n").slice(0, 5);
 
-    });
+      // compose the tempOutput
+       headLines.forEach(function(line){
+          tempOutput += line + '\n';
+        });
+
+      allCommands.shift();
+      if (allCommands.length > 0) {
+        commandFunc(allCommands[0], tempOutput);
+      }
+      else {
+        done(tempOutput);
+      }
+      // check following commands, if therer is no commmand, done
+    }
   }
 
   if (commands[0] === 'tail') {
@@ -131,7 +162,7 @@ function filesFunc(command) {
 
       for (var i = 0; i < files.length; i++) {
         if (fs.lstatSync(commands[1] + '/' + files[i]).isDirectory()) {
-          filesFunc('find ' + commands[1] + '/' + files[i]);
+          commandFunc('find ' + commands[1] + '/' + files[i]);
         }
       }
 
@@ -144,7 +175,5 @@ function filesFunc(command) {
 
 
 module.exports = {
-  commandFunc: commandFunc,
-  echoFunc: echoFunc,
-  filesFunc: filesFunc
+  commandFunc: commandFunc
 };
